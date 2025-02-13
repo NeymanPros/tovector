@@ -12,7 +12,7 @@
 using namespace cv;
 
 //making the image only black and white
-void white_and_black(Mat &c, const int &contrast) {   
+void white_and_black(Mat &c, const int &contrast) {
     for (int i = 0; i < c.rows - 1; i++) {
         for (int j = 0; j < c.cols - 1; j++) {
             if (c.at<Vec3b>(i, j)[0] > contrast || c.at<Vec3b>(i, j)[1] > contrast || c.at<Vec3b>(i, j)[2] > contrast) {
@@ -39,7 +39,7 @@ void neib(Mat &c, Mat &nc, int i, int j) {
 
 
 //extracting lines from contur
-void line(Mat& nc, Mat& c, int& i, int& j, std::vector<int>& dots, unsigned char picture, unsigned char condition) { 
+void line(Mat& nc, Mat& c, int& i, int& j, std::vector<int>& dots, unsigned char picture, unsigned char condition) {
     dots.clear();
     int a = i;
     int b = j;
