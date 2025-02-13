@@ -573,9 +573,6 @@ int main() {
     imshow("Tap c to continue", nc);
     int z = waitKey(10000);
 
-    if (z == '1') {
-        imwrite(name, c);
-    }
     if (z == 'l') {
         lineOnly = true;
     }
