@@ -27,7 +27,7 @@ void white_and_black(Mat &c, const int &contrast) {
 }
 
 //contours
-void neib(Mat &c, Mat &nc, int i, int j) {
+void neib(Mat &c, Mat &nc, const int i, const int j) {
     if ((c.at<Vec3b>(i, j) != c.at<Vec3b>(i - 1, j))     || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i + 1, j)) ||
         (c.at<Vec3b>(i, j) != c.at<Vec3b>(i, j - 1))     || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i, j + 1)) ||
         (c.at<Vec3b>(i, j) != c.at<Vec3b>(i - 1, j - 1)) || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i - 1, j + 1)) ||
@@ -135,7 +135,7 @@ void line(Mat& nc, Mat& c, int& i, int& j, std::vector<int>& dots, unsigned char
 }
 
 //svg part
-std::string start(int width, int height) {
+std::string start(const int width, const int height) {
         return "<svg width=\"" + std::to_string(width) + "\" height=\"" + std::to_string(height) + "\" xmlns=\"http://www.w3.org/2000/svg\">\n";
 };
 
