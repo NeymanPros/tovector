@@ -1,17 +1,11 @@
 ﻿cmake_minimum_required( VERSION 3.0 )
-set( CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" )
 
 # Create Project
-project( tovector )
-add_executable( tovector tovector.cpp )
+project( to_vector )
+add_executable( to_vector main.cpp )
 
 # Set OpenCVConfig.cmake Search Directory
-set( OpenCV_DIR )
-if( NOT CMAKE_CL_64 )
-  set( OpenCV_DIR "C:/vcpkg/installed/x86-windows/share/opencv4" )
-else()
-  set( OpenCV_DIR "C:/vcpkg/installed/x64-windows/share/opencv4" )
-endif()
+set( OpenCV_DIR "/usr/local/include/opencv4" )	
 
 # Find Package
 find_package( OpenCV REQUIRED )
@@ -24,5 +18,5 @@ if( OpenCV_FOUND )
   link_directories( ${OpenCV_LIB_DIR} )
 
   # Additional Dependencies
-  target_link_libraries( tovector ${OpenCV_LIBS} )
+  target_link_libraries( to_vector ${OpenCV_LIBS} )
 endif()
