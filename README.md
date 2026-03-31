@@ -7,8 +7,6 @@ Console app, uses OpenCV library. Takes a path to some image and creates a .svg 
 ---
 **Usage**
 
-After installing the files, replace the path inside CMakeFiles.txt, leading to Opencv with the coorect one.
-
 The app can be launched using cmake + make, 
 ```cd /path/to/project/
 mkdir ./build
