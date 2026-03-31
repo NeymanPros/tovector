@@ -13,7 +13,7 @@ using namespace cv;
 
 
 /// Faking the image only black and white.
-void white_and_black(Mat &c, const int &contrast) {   
+void white_and_black(Mat &c, const int contrast) {   
     for (int i = 0; i < c.rows - 1; i++) {
         for (int j = 0; j < c.cols - 1; j++) {
             if (c.at<Vec3b>(i, j)[0] > contrast || c.at<Vec3b>(i, j)[1] > contrast || c.at<Vec3b>(i, j)[2] > contrast) {
@@ -42,8 +42,8 @@ void neib(Mat &c, Mat &nc, int i, int j) {
 
 
 /// Extracting lines from contour.
-void line(Mat& nc, Mat& c, int& i, int& j, std::vector<int>& dots, unsigned char picture, unsigned char condition) { 
-    dots.clear();
+std::vector<int> line(Mat& nc, Mat& c, const int i, const int j, unsigned char picture, unsigned char condition) {
+    std::vector<int> dots;
     int a = i;
     int b = j;
     int run = 0;
@@ -122,7 +122,6 @@ void line(Mat& nc, Mat& c, int& i, int& j, std::vector<int>& dots, unsigned char
 
             else if (count > 2) {
                 
-
                 dots.push_back(a1);
                 dots.push_back(b1);
                 now += 2;
@@ -135,6 +134,7 @@ void line(Mat& nc, Mat& c, int& i, int& j, std::vector<int>& dots, unsigned char
             now = -10;
         }
     }
+    return dots;
 }
 
 // svg part
@@ -220,10 +220,9 @@ public:
     }
 
     
-    ///Leaves only the first and the last dots in vertical and horizontal lines.
+    /// Decreases the amount of dots in vertical and horizontal lines.
     void two_dots_line() {
         dotII.clear();
-        int raw = 0;
         int now = 0;
         
         if (dotI.size() < 2) {
@@ -260,7 +259,7 @@ public:
 
     }
 
-    /// Leaves only the firtd and the last dots in diagonal lines.
+    /// Leaves only the first and the last dots in diagonal lines.
     void two_dots_diagonal() {
 
         new_angles();
@@ -282,12 +281,12 @@ public:
     }
 
     /// Tries to remove unneeded spikes from.
-    void no_random_dots() {
+    void no_random_dots(int intense) {
 
-        for (int i = 2; i + 2 < angles.size(); i += 2) {
+        for (int i = 2; i + 4 < angles.size(); i += 2) {
 
-            if ((angles[i] * angles[i] + angles[i + 1] * angles[i + 1] <= 8)
-                && (angles[i - 2] * angles[i - 2] + angles[i - 1] * angles[i - 1] <= 8)) {
+            if ((angles[i] * angles[i] + angles[i + 1] * angles[i + 1] <= intense)
+                && (angles[i + 2] * angles[i + 2] + angles[i + 3] * angles[i + 3] <= intense)) {
 
                 angles.erase(angles.begin() + i, angles.begin() + i + 2);
                 dotII.erase(dotII.begin() + i, dotII.begin() + i + 2);
@@ -301,8 +300,8 @@ public:
     void simple() {
         this->two_dots_line();
         this->two_dots_diagonal();
-        this->no_random_dots();
-        this->no_random_dots();
+        this->no_random_dots(8);
+        this->no_random_dots(8);
         this->two_dots_diagonal();
     }
 
@@ -449,7 +448,7 @@ public:
                                 k_safe = k;
                                 i = k;
                                 line = false;
-                            } //3+
+                        } //3+
                         
 
                     }
@@ -553,8 +552,9 @@ int main(int argc, char *argv[]) {
         std::cout << "The image wasn't found!\n";
         return 0;
     }
-
-    white_and_black(c, 128);
+    
+    int contrast = 128;
+    white_and_black(c, contrast);
 
     bool lineOnly = false;
     Mat nc;
@@ -584,14 +584,16 @@ int main(int argc, char *argv[]) {
         lineOnly = true;
     }
 
-    if (z == 'w' || z == 'b') {
-
+    
+    for (int increment = 64; (z == 'w' || z == 'b') && increment > 1; increment /= 2) {
         c = imread(name, IMREAD_COLOR);
         if (z == 'w') {
-            white_and_black(c, 64);
+            contrast += increment;
+            white_and_black(c, contrast);
         }
         else if (z == 'b') {
-            white_and_black(c, 192);
+            contrast -= increment;
+            white_and_black(c, contrast);
         }
 
         for (int i = 1; i < c.rows - 2; i++) {
@@ -602,8 +604,8 @@ int main(int argc, char *argv[]) {
 
         imshow("Contours", nc);
         
-        int z1 = waitKey(20000);
-        if (z1 == 'q') {
+        z = waitKey(20000);
+        if (z == 'q') {
             return 0;
         }
     }
@@ -619,7 +621,6 @@ int main(int argc, char *argv[]) {
     result += "svg";
     std::ofstream svg(result);
     
-    std::vector<int>dots;
 
     svg << start(c.cols, c.rows);
     rect field("100%", "100%");
@@ -632,7 +633,7 @@ int main(int argc, char *argv[]) {
         for (int i = 1; i < c.rows - 1; i++) {
 
             if (nc.at<Vec3b>(i, j)[0] == condition) {
-                line(nc, c, i, j, dots, picture, condition);
+                std::vector<int>dots = line(nc, c, i, j, picture, condition);
                 path p(dots);
                 dots.clear();
                 p.simple();
@@ -646,8 +647,6 @@ int main(int argc, char *argv[]) {
 
         }
     }
-
-    dots.clear();
 
     svg << end();
 
