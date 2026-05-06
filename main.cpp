@@ -29,16 +29,7 @@ int main(int argc, char *argv[]) {
     int contrast = 128;
     white_and_black(c, contrast);
 
-    Mat nc;
-    resize(c, nc, Size(), 1, 1);
-    
-    nc.setTo(Scalar(255, 255, 255));
-
-    for (int i = 1; i < c.rows - 2; i++) {
-        for (int j = 1; j < c.cols - 2; j++) {
-            neib(c, nc, i, j);
-        }
-    }
+    Mat nc = neib(c);
     
     namedWindow("Contours", WINDOW_KEEPRATIO);
     
@@ -53,9 +44,6 @@ int main(int argc, char *argv[]) {
     imshow("Contours", nc);
     
     int z = waitKey(20000);
-    if (z == 'l') {
-        line_only = true;
-    }
 
     
     for (int increment = 64; (z == 'w' || z == 'b') && increment > 1; increment /= 2) {
@@ -69,12 +57,7 @@ int main(int argc, char *argv[]) {
             white_and_black(c, contrast);
         }
 
-        for (int i = 1; i < c.rows - 2; i++) {
-            for (int j = 1; j < c.cols - 2; j++) {
-                neib(c, nc, i, j);
-            }
-        }
-
+        nc = neib(c);
         imshow("Contours", nc);
         
         z = waitKey(20000);
@@ -83,6 +66,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (z == 'l') {
+        line_only = true;
+    }
     if (z == 'q') {
         return 0;
     }
@@ -106,7 +92,7 @@ int main(int argc, char *argv[]) {
         for (int i = 1; i < c.rows - 1; i++) {
 
             if (nc.at<Vec3b>(i, j)[0] == condition) {
-                std::vector<int> dots = line(nc, c, i, j, picture, condition);
+                std::vector<Point> dots = line(nc, i, j, picture, condition);
                 Path p(dots);
                 p.simple();
                 if (line_only) {

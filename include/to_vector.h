@@ -2,7 +2,6 @@
 #define TO_VECTOR
 
 #include <opencv2/core.hpp>
-//#include <opencv2/imgproc.hpp>
 
 #include <array>
 
@@ -14,11 +13,11 @@ void white_and_black(Mat &c, const int contrast);
 
 /// This function find countours of an image.
 /// Writes contours from the first cv::Mat into the second one.
-void neib(Mat &c, Mat &nc, int i, int j);
+Mat neib(Mat &c);
 
 
 /// Extracting lines from contour.
-std::vector<int> line(Mat& nc, Mat& c, const int i, const int j, unsigned char picture, unsigned char condition);
+std::vector<Point> line(Mat& nc, const int i, const int j, unsigned char picture, unsigned char condition);
 
 /// Starting part of svg code.
 std::string start(int width, int height);
@@ -52,33 +51,32 @@ std::string end();
 /// Interprets vector of dots into svg code.
 class Path {
 private:
-    std::string stroke;
-    std::vector<int> dots;
+    std::vector<Point> dots;
     std::array <std::string, 3> rgb = { "0", "0", "0" };
-    std::vector<int> angles;
+    std::vector<Point> angles;
 public:
     Path() {};
 
-    Path(const std::vector<int>& new_dots) {
-        if(new_dots.size() > 1){
+    Path(const std::vector<Point>& new_dots) {
+        if (new_dots.size() > 1) {
             dots = new_dots;
         }
     };
 
     ~Path() {
         dots.clear();
-        cont.clear();
         angles.clear();
     };
 
     /// Finds the shift from some point to the next one in a path::dotII vector.
     void new_angles();
-    
-    /// Decreases the amount of dots in vertical and horizontal lines.
-    void two_dots_line();
 
     /// Leaves only the first and the last dots in diagonal lines.
-    void two_dots_diagonal();
+    void two_dots_line();
+    
+    /// Transforms reduntant dot pair into single dot.
+    void line_filter();
+    void two_dots_straight();
 
     /// Tries to remove unwanted spikes from dotII.
     void no_random_dots(int intense);
@@ -94,9 +92,6 @@ public:
 
     /// Creates a part of an image with a chance of adding ellipse curves.
     std::string create_path();
-
-    /// Returns generated svg code.
-    std::string out();
 };
 
 #endif // TO_VECTOR

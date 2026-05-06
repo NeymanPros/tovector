@@ -6,9 +6,10 @@
 
 #include <to_vector.h>
 using namespace cv;
+#include <iostream>
 
 /// Making the image only black and white.
-void white_and_black(Mat &c, const int contrast) {   
+void white_and_black(Mat &c, const int contrast) {
     for (int i = 0; i < c.rows - 1; i++) {
         for (int j = 0; j < c.cols - 1; j++) {
             if (c.at<Vec3b>(i, j)[0] > contrast || c.at<Vec3b>(i, j)[1] > contrast || c.at<Vec3b>(i, j)[2] > contrast) {
@@ -25,108 +26,112 @@ void white_and_black(Mat &c, const int contrast) {
 
 /// This function find countours of an image.
 /// Writes contours from the first cv::Mat into the second one.
-void neib(Mat &c, Mat &nc, int i, int j) {
-    if ((c.at<Vec3b>(i, j) != c.at<Vec3b>(i - 1, j))     || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i + 1, j)) ||
-        (c.at<Vec3b>(i, j) != c.at<Vec3b>(i, j - 1))     || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i, j + 1)) ||
-        (c.at<Vec3b>(i, j) != c.at<Vec3b>(i - 1, j - 1)) || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i - 1, j + 1)) ||
-        (c.at<Vec3b>(i, j) != c.at<Vec3b>(i + 1, j - 1)) || (c.at<Vec3b>(i, j) != c.at<Vec3b>(i + 1, j + 1))) {
+Mat neib(Mat &c) {
+    Mat out;
+    resize(c, out, Size(), 1, 1);
+    out.setTo(Scalar(255, 255, 255));
+    
+    for (int y = 1; y < c.rows - 2; y++) {
+        for (int x = 1; x < c.cols - 2; x++) {
+            if (c.at<Vec3b>(y, x) != c.at<Vec3b>(y - 1, x - 1) || c.at<Vec3b>(y, x) != c.at<Vec3b>(y - 1, x) || 
+                c.at<Vec3b>(y, x) != c.at<Vec3b>(y - 1, x + 1) || c.at<Vec3b>(y, x) != c.at<Vec3b>(y, x - 1) ||
+                c.at<Vec3b>(y, x) != c.at<Vec3b>(y, x + 1) || c.at<Vec3b>(y, x) != c.at<Vec3b>(y + 1, x - 1) || 
+                c.at<Vec3b>(y, x) != c.at<Vec3b>(y + 1, x) || c.at<Vec3b>(y, x) != c.at<Vec3b>(y + 1, x + 1)) {
 
-            nc.at<Vec3b>(i, j) = { c.at<Vec3b>(i, j)[0], c.at<Vec3b>(i, j)[1], c.at<Vec3b>(i, j)[2] };
+                    out.at<Vec3b>(y, x) = { c.at<Vec3b>(y, x)[0], c.at<Vec3b>(y, x)[1], c.at<Vec3b>(y, x)[2] };
+            }
+        }
     }
+    return out;
 }
 
 
-/// Extracting lines from contour.
-std::vector<int> line(Mat& nc, Mat& c, const int i, const int j, unsigned char picture, unsigned char condition) {
-    std::vector<int> dots;
-    int a = i;
-    int b = j;
+/// Extracting coordinates from contour.
+std::vector<Point> line(Mat& nc, int y, int x, unsigned char picture, unsigned char condition) {
+    std::vector<Point> dots;
     int run = 0;
-    nc.at<Vec3b>(i, j) = { picture, picture, picture };
+    nc.at<Vec3b>(y, x) = { picture, picture, picture };
 
-    dots.push_back(i);
-    dots.push_back(j);
+    dots.push_back({x, y});
 
     short count = 0;
-    int a1 = a;
-    int b1 = b;
-    for (int now = 2; now > 0;) {
+    int y1 = y;
+    int x1 = x;
+    for (int now = 1; now > 0;) {
 
-        if (a > 0 && a < c.rows && b > 0 && b < c.cols) {
+        if (y > 0 && y < nc.rows && x > 0 && x < nc.cols) {
 
             count = 0;
 
-            if (nc.at<Vec3b>(a - 1, b)[1] == condition) {
+            if (nc.at<Vec3b>(y - 1, x)[1] == condition) {
                 count += 1;
-                a1 = a - 1;
-                b1 = b;
+                y1 = y - 1;
+                x1 = x;
             }
-            if (nc.at<Vec3b>(a, b + 1)[1] == condition) {
+            else if (nc.at<Vec3b>(y, x - 1)[1] == condition) {
                 count += 1;
-                a1 = a;
-                b1 = b + 1;
+                y1 = y;
+                x1 = x - 1;
             }
-            if (nc.at<Vec3b>(a, b - 1)[1] == condition) {
+            else if (nc.at<Vec3b>(y, x + 1)[1] == condition) {
                 count += 1;
-                a1 = a;
-                b1 = b - 1;
+                y1 = y;
+                x1 = x + 1;
             }
-            if (nc.at<Vec3b>(a + 1, b)[1] == condition) {
+            else if (nc.at<Vec3b>(y + 1, x)[1] == condition) {
                 count += 1;
-                a1 = a + 1;
-                b1 = b;
+                y1 = y + 1;
+                x1 = x;
             }
 
 
             if (count == 0) {
-                if (dots[0] - dots[now - 2] <= 1 && dots[now - 2] - dots[0] <= 1 &&
-                    dots[1] - dots[now - 1] <= 1 && dots[now - 1] - dots[1] <= 1){
-                    dots.push_back(dots[0]);
-                    dots.push_back(dots[1]);
+                if (now > 2) {
+                    if (dots[0].x - dots[now - 1].x <= 1 && dots[now - 1].y - dots[0].y <= 1 &&
+                        dots[0].x - dots[now - 1].x <= 1 && dots[now - 1].y - dots[0].y <= 1) {
+                            dots.push_back({dots[0].x, dots[0].y});
+                    }
                 }
-                now = -10;
+                return dots;
             }
 
             else if (count == 1) {
-                nc.at<Vec3b>(a, b) = { picture,picture,picture };
-                dots.push_back(a1);
-                dots.push_back(b1);
-                now += 2;
+                nc.at<Vec3b>(y, x) = { picture,picture,picture };
+                dots.push_back({x1, y1});
+                now++;
                 run = 0;
 
-                a = a1;
-                b = b1;
+                y = y1;
+                x = x1;
             }
 
             else if (count == 2) {
                 
                 if (run > 4) {
-                    nc.at<Vec3b>(a, b) = { picture,picture,picture };
+                    nc.at<Vec3b>(y, x) = { picture,picture,picture };
                 }
                 else {
                     run += 1;
                 }
 
-                dots.push_back(a1);
-                dots.push_back(b1);
-                now += 2;
+                dots.push_back({x1, y1});
+                now++;
 
-                a = a1;
-                b = b1;
+                y = y1;
+                x = x1;
             }
 
             else if (count > 2) {
                 
-                dots.push_back(a1);
-                dots.push_back(b1);
-                now += 2;
+                dots.push_back({x1, y1});
+                now++;
                 
-                a = a1;
-                b = b1;
+                y = y1;
+                x = x1;
             }
         }
         else {
-            now = -10;
+            return dots;
         }
     }
     return dots;
@@ -167,97 +172,133 @@ std::string end() {
 
 void Path::new_angles() {
     angles.clear();
-    
-    for (int i = 2; i < dots.size(); i++)
-        angles.push_back(dots[i] - dots[i - 2]);
+    for (int i = 0; i + 1 < dots.size(); i++)
+        angles.push_back(dots[i + 1] - dots[i]);
 }
-    
-void Path::two_dots_line() {
-    std::vector<int> dots_new = {};
+
+void Path::two_dots_straight() {
+    std::vector<Point> dots_new = {};
     int now = 0;
 
-    if (dots.size() < 2) {
+    if (dots.size() < 1) {
         return;
     }
 
     dots_new.push_back(dots[0]);
-    dots_new.push_back(dots[1]);
-    now += 2;
+    now++;
 
-    for (int i = 2; i < dots.size() - 2; i += 2) {
+    for (int i = 1; i < dots.size() - 1; i++) {
 
-        if(dots[i] == dots_new[now - 2] || dots[i + 1] == dots_new[now - 1]){
+        if(dots[i].y == dots_new[now - 1].y || dots[i].x == dots_new[now - 1].x){
             ;
         }
 
-        else if (dots[i - 2] != dots[i + 2] && dots[i - 1] != dots[i + 3]) {
+        else if (dots[i - 1].y != dots[i + 1].y && dots[i - 1].x != dots[i + 1].x) {
             dots_new.push_back(dots[i]);
-            dots_new.push_back(dots[i + 1]);
-            now += 2;
+            now++;
         }
         else {
-            dots_new.push_back(dots[i - 2]);
             dots_new.push_back(dots[i - 1]);
-            now += 2;
+            now++;
         }
 
     }
 
-    dots_new.push_back(dots[dots.size() - 2]);
     dots_new.push_back(dots[dots.size() - 1]);
 
     dots = dots_new;
 }
 
-void Path::two_dots_diagonal() {
+void Path::two_dots_line() {
     new_angles();
-
-    for (int i = 2; i < angles.size() - 2; i += 2) {
-     
-        if ((angles[i] == angles[i + 2] && angles[i] == angles[i - 2]) && (angles[i + 1] == angles[i - 1] && angles[i + 1] == angles[i + 3])) {
-
-            angles.erase(angles.begin() + i, angles.begin() + i + 2);
-            dots.erase(dots.begin() + i, dots.begin() + i + 2);
-            i -= 2;
-
+    std::vector<int> to_delete = {};
+    for (int i = 1; i < angles.size(); i++) {
+        if (angles[i].y == angles[i - 1].y && angles[i].x == angles[i - 1].x) {
+            to_delete.push_back(i);
         }
-
     }
+    for (int i = to_delete.size() - 1; i >= 0; i--) {
+        dots.erase(dots.begin() + to_delete[i], dots.begin() + to_delete[i] + 1);
+    }
+}
 
+void Path::line_filter() {
     new_angles();
+    std::vector<int> to_delete = {};
+    // no neighbours forward
+    for (int i = 1; i + 1 < angles.size(); i++) {
+        if (abs(angles[i - 1].y) + abs(angles[i - 1].x) == 1){
+            if (angles[i - 1].y == 0) {
+                if (dots[i].x == dots[i + 1].x && angles[i - 1].x * angles[i + 1].x >= 0) {
+                    to_delete.push_back(i);
+                }
+            }
+            else if (angles[i - 1].x == 0) {
+                if (dots[i].y == dots[i + 1].y && angles[i - 1].y * angles[i + 1].y >= 0) {
+                    to_delete.push_back(i);
+                }
+            }
+        }
+    }
+    for (int i = to_delete.size() - 1; i >= 0; i--) {
+        dots.erase(dots.begin() + to_delete[i], dots.begin() + to_delete[i] + 1);
+    }
+    
+    to_delete.clear();
+    new_angles();
+    
+    // no neighbours backwards
+    for (int i = (int) angles.size() - 1; i >= 1; i--) {
+        if (abs(angles[i].x) + abs(angles[i].y) == 1) {
+            if (angles[i].y == 0) {
+                if (angles[i - 1].x * angles[i].x >= 0) {
+                    to_delete.push_back(i);
+                }
+            }
+            else if (angles[i].x == 0) {
+                if (angles[i - 1].y * angles[i].y >= 0) {
+                    to_delete.push_back(i);
+                }
+            }
+        }
+    }
+    for (int i = 0; i + 1 < to_delete.size(); i++) {
+        dots.erase(dots.begin() + to_delete[i], dots.begin() + to_delete[i] + 1);
+    }
+    
 }
 
 void Path::no_random_dots(int intense) {
+    new_angles();
+    for (int i = 2; i + 2 < angles.size(); i += 2) { // to allow angles[i - 2] and angles[i] 
 
-    for (int i = 2; i + 4 < angles.size(); i += 2) {
-
-        if ((angles[i] * angles[i] + angles[i + 1] * angles[i + 1] <= intense)
-            && (angles[i + 2] * angles[i + 2] + angles[i + 3] * angles[i + 3] <= intense)) {
+        if ((angles[i - 1].y * angles[i - 1].y + angles[i - 1].x * angles[i - 1].x <= intense)
+            && (angles[i].y * angles[i].y + angles[i].x * angles[i].x <= intense)) {
 
             angles.erase(angles.begin() + i, angles.begin() + i + 2);
             dots.erase(dots.begin() + i, dots.begin() + i + 2);
         }
 
     }
-
 }
 
 void Path::simple() {
-    this->two_dots_line();
-    this->two_dots_diagonal();
-    this->no_random_dots(8);
-    this->no_random_dots(8);
-    this->two_dots_diagonal();
+    two_dots_line();
+    line_filter();
+    two_dots_line();
+    no_random_dots(14);
+    no_random_dots(14);
+    two_dots_line();
 }
 
 std::string Path::L() {
-    if (dots.size() > 3) {
+    if (dots.size() >= 2) {
         std::string cont = "";
 
-        cont = "M " + std::to_string(dots[1]) + " " + std::to_string(dots[0]) + "\n";
+        cont = "M " + std::to_string(dots[0].x) + " " + std::to_string(dots[0].y) + "\n";
 
-        for (int i = 2; i < dots.size(); i += 2) {
-                cont += "L " + std::to_string(dots[i + 1]) + " " + std::to_string(dots[i]) + "\n";
+        for (int i = 1; i < dots.size(); i++) {
+                cont += "L " + std::to_string(dots[i].x) + " " + std::to_string(dots[i].y) + "\n";
         }
 
         return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + " " + rgb[1] + " " + rgb[2] + ")\"\nd=\""
@@ -272,20 +313,25 @@ std::string Path::L() {
 std::string Path::points_only() {
     std::string cont = "";
     
-    for (int i = 0; i < dots.size(); i += 2) {
-        cont += "<circle x=" << dots[i] << " y = " << dots[i + 1] << " r=0.5 />\n";
+    for (int i = 0; i < dots.size(); i++) {
+        cont += "<circle cx=\"" + std::to_string(dots[i].x) + "\" cy=\"" + std::to_string(dots[i].y) + "\" r=\"1\"/>\n";
     }
     return cont;
 }
 
 
 std::string Path::create_path() {
-    if (dots.size() > 4) {
-        std::string cont = "";
+    std::string cont = "";
+    auto out = [&](std::string& cont) {
+        return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + " " + rgb[1] + " " + rgb[2] + ")\"\nd=\""
+            + cont + "\"\n/>\n";
+    };
+    if (dots.size() > 2) {
         
         auto write_arc = [&](double rx, double ry, char cw, int k_safe, int i_safe, int num) {
-            std::string writing = "A " + std::to_string(rx) + ' ' + std::to_string(ry) + " 0 0 " + cw + ' ' + std::to_string(dots[k_safe + 1]) + ' ' + std::to_string(dots[k_safe]) + '\n';
+            std::string writing = "";
             
+            writing += "A " + std::to_string(rx) + ' ' + std::to_string(ry) + " 0 0 " + cw + ' ' + std::to_string(dots[k_safe].x) + ' ' + std::to_string(dots[k_safe].y) + '\n';
             return writing;
         };
 
@@ -299,145 +345,149 @@ std::string Path::create_path() {
         int num = 0;
         int i_safe = -1;
 
-        cont = "M " + std::to_string(dots[1]) + " " + std::to_string(dots[0]) + "\n";
+        cont = "M " + std::to_string(dots[0].x) + " " + std::to_string(dots[0].y) + "\n";
 
-        for (int i = 2; i < dots.size() - 2; i += 2) {
+        for (int i = 1; i < dots.size() - 1; i++) {
 
             line = true;
-            if ((angles[i - 1] == -1 || angles[i - 1] == 1) && (angles[i - 1] > 0) == (angles[i + 1] > 0)) {
+            if (angles[i - 1].x >= -2 && angles[i - 1].x <= 2 && (angles[i - 1].x > 0) == (angles[i].x > 0)) {
 
-                if (abs(angles[i - 2]) >= abs(angles[i]) && (angles[i - 2] > 0) == (angles[i] > 0)) {
-                    k = i;
+                if (abs(angles[i - 1].y) >= abs(angles[i].y) && (angles[i - 1].y > 0) == (angles[i].y > 0)) {
+                    k = i + 1;
 
-                    //[k-2]/[k-1] >= [k]/[k+1]
-                    for (; dots.size() - 2 > k && angles[i - 2] * angles[k] > 0 && angles[i - 1] * angles[k + 1] > 0 &&
-                        abs(angles[k - 2] * angles[k + 1]) >= abs(angles[k] * angles[k - 1]); k += 2);
+                    // y1/x1 <= y0/x0
+                    for (; dots.size() - 1 > k && angles[i - 1].y * angles[k - 1].y > 0 && angles[i - 1].x * angles[k - 1].x > 0 &&
+                        abs(angles[k - 2].y * angles[k - 1].x) >= abs(angles[k - 1].y * angles[k - 2].x); k++);
 
-                    if (abs(dots[k] - dots[i]) > 6) {
-                            if ((num == 1 || num == 4) && (cw == ((angles[i + 1] > 0) != (angles[i] > 0)) + '0') && (angles[i_safe] > 0) == (angles[i] > 0)) {
-                                i = i_safe;
-                            }
-                            else if (num != 0) {
-                                cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
-                            }
-                            num = 1;
-                            cw = ((angles[i + 1] > 0) != (angles[i] > 0)) + '0';
+                    if (k >= i + 3 && abs(dots[k].y - dots[i].y) > 6) {
+                        if ((num == 1 || num == 4) && (cw == ((angles[i].x > 0) != (angles[i].y > 0)) + '0') && (angles[i_safe - 1].y > 0) == (angles[i].y > 0)) {
+                            i = i_safe;
+                        }
+                        else if (num != 0) {
+                            cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
+                        }
+                        num = 1;
+                        cw = ((angles[i].x > 0) != (angles[i].y > 0)) + '0';
 
-                            c = abs(dots[k + 1] - dots[i - 1]);
-                            b = abs(dots[i - 2] - dots[k]);
-                            n = dots[k + 1] - dots[k - 1];
-                            m = dots[k] - dots[k - 2];
-                            ctg = abs(c * c / (2 * b * c + m / n * b * b));
-                            rx = c + ctg * b;
-                            ry = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
+                        b = abs(dots[k].y - dots[i - 1].y);
+                        c = abs(dots[k].x - dots[i - 1].x);
+                        n = dots[k].x - dots[k - 1].x;
+                        m = dots[k].y - dots[k - 1].y;
+                        ctg = abs(c * c / (2 * b * c + m / n * b * b));
+                        rx = c + ctg * b;
+                        ry = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
 
-                            i_safe = i;
-                            k_safe = k;
-                            i = k;
-                            line = false;
+                        i_safe = i;
+                        k_safe = k;
+                        i = k;
+                        line = false;
                         
                     } //1+
 
                 }
 
-                else if (abs(angles[i - 2]) <= abs(angles[i]) && (angles[i - 2] > 0) == (angles[i] > 0)) {
-                    k = i;
-                    for (; dots.size() - 2 > k && angles[i - 2] * angles[k] > 0 && angles[i - 1] * angles[k + 1] > 0 &&
-                        abs(angles[k - 2] * angles[k + 1]) <= abs(angles[k] * angles[k - 1]); k += 2);
+                else if (abs(angles[i - 1].y) <= abs(angles[i].y) && (angles[i - 1].y > 0) == (angles[i].y > 0)) {
+                    k = i + 1;
+                    
+                    // y0/x0 <= y1/x1
+                    for (; dots.size() - 1 > k && angles[i - 1].y * angles[k - 1].y > 0 && angles[i - 1].x * angles[k - 1].x > 0 &&
+                        abs(angles[k - 2].y * angles[k - 1].x) <= abs(angles[k - 1].y * angles[k - 2].x); k++);
 
-                    if (abs(dots[k] - dots[i]) > 6) {
-                        if ((num == 2 || num == 3) && (cw == ((angles[i + 1] > 0) == (angles[i] > 0)) + '0') && (angles[i_safe] > 0) == (angles[i] > 0)) {
-                                i = i_safe;
-                            }
-                            else if (num != 0) {
-                                cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
-                            }
-                            num = 2;
-                            cw = ((angles[i + 1] > 0) == (angles[i] > 0)) + '0';
+                    if (k >= i + 3 && abs(dots[k].x - dots[i].x) > 6) {
+                        if ((num == 2 || num == 3) && (cw == ((angles[i].x > 0) == (angles[i].y > 0)) + '0') && (angles[i_safe - 1].y > 0) == (angles[i].y > 0)) {
+                            i = i_safe;
+                        }
+                        else if (num != 0) {
+                            cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
+                        }
+                        num = 2;
+                        cw = ((angles[i].x > 0) == (angles[i].y > 0)) + '0';
 
-                            c = abs(dots[k + 1] - dots[i - 1]);
-                            b = abs(dots[i - 2] - dots[k]);
-                            n = dots[k + 1] - dots[k - 1];
-                            m = dots[k] - dots[k - 2];
+                        c = abs(dots[k].x - dots[i - 1].x);
+                        b = abs(dots[k].y - dots[i - 1].y);
+                        n = dots[k].x - dots[k - 1].x;
+                        m = dots[k].y - dots[k - 1].y;
 
-                            ctg = abs(c * c / (2 * b * c + m / n * b * b));
-                            rx = c + ctg * b;
-                            ry = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
+                        ctg = abs(c * c / (2 * b * c + m / n * b * b));
+                        rx = c + ctg * b;
+                        ry = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
 
-                            k_safe = k;
-                            i_safe = i;
-                            i = k;
-                            line = false;
-                        
+                        k_safe = k;
+                        i_safe = i;
+                        i = k;
+                        line = false;
+                    
                     } //2+
                 }
             }
 
-            else if ((angles[i - 2] == -1 || angles[i - 2] == 1) && (angles[i - 2] > 0) == (angles[i] > 0)) {
+            else if (angles[i - 1].y >= -2 && angles[i - 1].y <= 2 && (angles[i - 1].y > 0) == (angles[i].y > 0)) {
 
-                if (abs(angles[i - 1]) >= abs(angles[i + 1]) && (angles[i - 1] > 0) == (angles[i + 1] > 0)) {
-                    k = i;
+                if (abs(angles[i - 1].x) >= abs(angles[i].x) && (angles[i - 1].x > 0) == (angles[i].x > 0)) {
+                    k = i + 1;
 
-                    for (; dots.size() - 2 > k && angles[i - 2] * angles[k] > 0 && angles[i - 1] * angles[k + 1] > 0 &&
-                        abs(angles[k - 1] * angles[k]) >= abs(angles[k + 1] * angles[k - 2]); k += 2);
+                    // x0/y0 >= x1/y1
+                    for (; dots.size() - 1 > k && angles[i - 1].y * angles[k - 1].x > 0 && angles[i - 1].x * angles[k - 1].x > 0 &&
+                        abs(angles[k - 2].x * angles[k - 1].y) >= abs(angles[k - 1].x * angles[k - 2].y); k++);
 
-                    if (abs(dots[k + 1] - dots[i + 1]) > 6) {
-                        if ((num == 2 || num == 3) && (cw == ((angles[i + 1] > 0) == (angles[i] > 0)) + '0') && (angles[i_safe] > 0) == (angles[i] > 0)) {
-                                i = i_safe;
-                            }
-                            else if (num != 0) {
-                                cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
-                            }
-                            num = 3;
-                            cw = ((angles[i + 1] > 0) == (angles[i] > 0)) + '0';
+                    if (k >= i + 2 && abs(dots[k].x - dots[i].x) > 6) {
+                        if ((num == 2 || num == 3) && (cw == ((angles[i].x > 0) == (angles[i].y > 0)) + '0') && (angles[i_safe - 1].y > 0) == (angles[i].y > 0)) {
+                            i = i_safe;
+                        }
+                        else if (num != 0) {
+                            cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
+                        }
+                        num = 3;
+                        cw = ((angles[i].x > 0) == (angles[i].y > 0)) + '0';
 
-                            b = abs(dots[k + 1] - dots[i - 1]);
-                            c = abs(dots[i - 2] - dots[k]);
-                            m = dots[k + 1] - dots[k - 1];
-                            n = dots[k] - dots[k - 2];
+                        b = abs(dots[i - 1].x - dots[k].x);
+                        c = abs(dots[i - 1].y - dots[k].y);
+                        m = dots[k].x - dots[k - 1].x;
+                        n = dots[k].y - dots[k - 1].y;
 
-                            ctg = abs(c * c / (2 * b * c + m / n * b * b));
-                            ry = c + ctg * b;
-                            rx = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
+                        ctg = abs(c * c / (2 * b * c + m / n * b * b));
+                        ry = c + ctg * b;
+                        rx = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
 
-                            i_safe = i;
-                            k_safe = k;
-                            i = k;
-                            line = false;
+                        i_safe = i;
+                        k_safe = k;
+                        i = k;
+                        line = false;
                     } //3+
                     
 
                 }
 
-                else if (abs(angles[i - 1]) <= abs(angles[i + 1]) && (angles[i - 1] > 0) == (angles[i + 1] > 0)) {
-                    k = i;
+                else if (abs(angles[i - 1].x) <= abs(angles[i].x) && (angles[i - 1].x > 0) == (angles[i].x > 0)) {
+                    k = i + 1;
+                    
+                    // x0/y0 <= x1/y1
+                    for (; dots.size() - 1 > k && angles[i - 1].y * angles[k - 1].y > 0 && angles[i - 1].x * angles[k - 1].x > 0 &&
+                        abs(angles[k - 2].x * angles[k - 1].y) <= abs(angles[k - 1].x * angles[k - 2].y); k++);
 
-                    for (; dots.size() - 2 > k && angles[i - 2] * angles[k] > 0 && angles[i - 1] * angles[k + 1] > 0 &&
-                        abs(angles[k - 1] * angles[k]) <= abs(angles[k + 1] * angles[k - 2]); k += 2);
+                    if (k >= i + 2 && abs(dots[k].x - dots[i].x) > 6) {
+                        if ((num == 1 || num == 4) && (cw == ((angles[i].x > 0) != (angles[i].y > 0)) + '0') && (angles[i_safe - 1].y > 0) == (angles[i].y > 0)) {
+                            i = i_safe;
+                        }
+                        else if (num != 0) {
+                            cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
+                        }
+                        num = 4;
+                        cw = ((angles[i].x > 0) != (angles[i].y > 0)) + '0';
 
-                    if (abs(dots[k + 1] - dots[i + 1]) > 6) {
-                        if ((num == 1 || num == 4) && (cw == ((angles[i + 1] > 0) != (angles[i] > 0)) + '0') && (angles[i_safe] > 0) == (angles[i] > 0)) {
-                                i = i_safe;
-                            }
-                            else if (num != 0) {
-                                cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
-                            }
-                            num = 4;
-                            cw = ((angles[i + 1] > 0) != (angles[i] > 0)) + '0';
+                        b = abs(dots[i - 1].x - dots[k].x);
+                        c = abs(dots[i - 1].y - dots[k].y);
+                        m = dots[k].x - dots[k - 1].x;
+                        n = dots[k].y - dots[k - 1].y;
 
-                            b = abs(dots[k + 1] - dots[i - 1]);
-                            c = abs(dots[i - 2] - dots[k]);
-                            m = dots[k + 1] - dots[k - 1];
-                            n = dots[k] - dots[k - 2];
+                        ctg = abs(c * c / (2 * b * c + m / n * b * b));
+                        ry = c + ctg * b;
+                        rx = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
 
-                            ctg = abs(c * c / (2 * b * c + m / n * b * b));
-                            ry = c + ctg * b;
-                            rx = sqrt(b * b + (b * b * b * b * ctg * ctg) / (2 * b * c * ctg + c * c));
-
-                            i_safe = i;
-                            k_safe = k;
-                            i = k;
-                            line = false;
+                        i_safe = i;
+                        k_safe = k;
+                        i = k;
+                        line = false;
                         
                     } //4+
 
@@ -450,31 +500,30 @@ std::string Path::create_path() {
                 }
 
                 num = 0;
-                cont += "L " + std::to_string(dots[i + 1]) + " " + std::to_string(dots[i]) + "\n";
+                cont += "L " + std::to_string(dots[i].x) + " " + std::to_string(dots[i].y) + "\n";
             }
-            else if (i >= dots.size() - 4 && num != 0) {
+            else if (i >= dots.size() - 2 && num != 0) {
                 cont += write_arc(rx, ry, cw, k_safe, i_safe, num);
 
             }
         }
 
 
-        cont += "L " + std::to_string(dots[dots.size() - 1]) + " " + std::to_string(dots[dots.size() - 2]) + "\n";
+        cont += "L " + std::to_string(dots[dots.size() - 1].x) + " " + std::to_string(dots[dots.size() - 1].y) + "\n";
 
-        return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + " " + rgb[1] + " " + rgb[2] + ")\"\nd=\""
-            + cont + "\"\n/>\n";
+        return out(cont);
     }
 
     else if (dots.size() == 4) {
 
-        if (dots[0] == dots[2] && dots[1] == dots[3])
+        if (dots[0] == dots[2])
             return "";
 
         else {
-            cont = "M " + std::to_string(dots[1]) + " " + std::to_string(dots[0]) + "\n";
-            cont += "L " + std::to_string(dots[3]) + " " + std::to_string(dots[2]) + "\n";
+            cont = "M " + std::to_string(dots[0].x) + " " + std::to_string(dots[0].y) + "\n";
+            cont += "L " + std::to_string(dots[1].x) + " " + std::to_string(dots[1].y) + "\n";
 
-            return out();
+            return out(cont);
         }
 
     }
@@ -482,10 +531,4 @@ std::string Path::create_path() {
         return "";
     }
 }
-
-std::string Path::out() {
-    return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + " " + rgb[1] + " " + rgb[2] + ")\"\nd=\""
-        + cont + "\"\n/>\n";
-}
-
 
