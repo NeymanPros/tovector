@@ -86,8 +86,20 @@ SvgInfo read_svg(std::string &svg_path) {
     return result;
 }
 
+struct PointHash {
+    size_t operator()(const cv::Point& p) const noexcept {
+        return std::hash<int>{}(p.x) ^ (std::hash<int>{}(p.y) << 1);
+    }
+};
+struct PointEq {
+    bool operator()(const cv::Point& a, const cv::Point& b) const noexcept {
+        return a.x == b.x && a.y == b.y;
+    }
+};
+
 float count_accuracy(SvgInfo &test, SvgInfo &perfect) {
-    std::unordered_set<Point> perfect_dots = {}, test_dots = {};
+    std::unordered_set<Point, PointHash, PointEq> perfect_dots; 
+    std::unordered_set<Point, PointHash, PointEq> test_dots;
     int line_count = 0, arc_count = 0;
     int dot_hit = 0, dot_miss = 0;
     float line_hit = 0, arc_hit = 0;
@@ -120,8 +132,8 @@ float count_accuracy(SvgInfo &test, SvgInfo &perfect) {
                 
                 if (obj == 'A') {
                     if (std::get<0>(test_elem) == start || std::get<1>(test_elem) == end) {
-                        auto params = std::get<3>(elem).value;
-                        auto params_test = std::get<3>(test_elem).value;
+                        auto params = std::get<3>(elem).value();
+                        auto params_test = std::get<3>(test_elem).value();
                         obj_hit = 10;
                         if (std::get<0>(params) == std::get<0>(params_test)) {
                             obj_hit += 4;
@@ -134,8 +146,8 @@ float count_accuracy(SvgInfo &test, SvgInfo &perfect) {
                             obj_hit += 3;
                     }
                     else if (std::get<0>(test_elem) == end || std::get<1>(test_elem) == start) {
-                        auto params = std::get<3>(elem).value;
-                        auto params_test = std::get<3>(test_elem).value;
+                        auto params = std::get<3>(elem).value();
+                        auto params_test = std::get<3>(test_elem).value();
                         obj_hit = 10;
                         if (std::get<0>(params) != std::get<0>(params_test)) {
                             obj_hit += 4;
@@ -163,7 +175,7 @@ float count_accuracy(SvgInfo &test, SvgInfo &perfect) {
     
     int dots_hit = 0;
     for (auto& dot: perfect_dots) {
-        if (test_dots.contains(dot) )
+        if (test_dots.find(dot) != perfect_dots.end())
             dots_hit++;
     }
     if (perfect_dots.size() == 0)
