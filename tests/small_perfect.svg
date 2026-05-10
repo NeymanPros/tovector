@@ -1,0 +1,27 @@
+<svg width="141" height="145" xmlns="http://www.w3.org/2000/svg">
+<rect width="100%" height="100%" fill="rgb(255 255 255)"/>
+<path fill-opacity="0" stroke="rgb(0 0 0)"
+d="M 18 8
+L 54 8
+A 36 59 0 0 1 18 67
+L 18 8
+M 18 79
+A 36 59 0 0 1 54 138
+L 18 138
+L 18 79
+M 47 54
+L 95 54
+L 95 92
+L 47 92
+L 47 54
+M 89 138
+A 36 59 0 0 1 124 79
+L 124 138
+L 89 138
+M 90 8
+L 124 8
+L 124 67
+A 36 59 0 0 1 90 8
+"
+/>
+</svg>

@@ -1,0 +1,15 @@
+<svg width="762" height="760" xmlns="http://www.w3.org/2000/svg">
+<rect width="100%" height="100%" fill="rgb(255, 255, 255)"/>
+<path fill-opacity="0" stroke="rgb(0, 0, 0)"
+d="M 36 248
+L 36 520
+L 248 732
+L 520 732
+L 733 519
+L 733 248
+L 520 35
+L 249 35
+L 36 248
+"
+/>
+</svg>

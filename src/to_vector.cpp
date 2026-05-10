@@ -161,7 +161,7 @@ std::string Rectangle::write(int r, int g, int b) {
 }
 std::string Rectangle::write_no_xy(int r, int g, int b) {
     return "<rect width=\"" + width + "\" height=\"" + height + 
-        "\" fill=\"rgb(" + std::to_string(r) + " " + std::to_string(g) + " " + std::to_string(b) + ")\"/>\n";
+        "\" fill=\"rgb(" + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + ")\"/>\n";
 }
 
 
@@ -301,7 +301,7 @@ std::string Path::L() {
                 cont += "L " + std::to_string(dots[i].x) + " " + std::to_string(dots[i].y) + "\n";
         }
 
-        return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + " " + rgb[1] + " " + rgb[2] + ")\"\nd=\""
+        return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + ", " + rgb[1] + ", " + rgb[2] + ")\"\nd=\""
             + cont + "\"\n/>\n";
     }
     else {
@@ -323,7 +323,7 @@ std::string Path::points_only() {
 std::string Path::create_path() {
     std::string cont = "";
     auto out = [&](std::string& cont) {
-        return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + " " + rgb[1] + " " + rgb[2] + ")\"\nd=\""
+        return "<path fill-opacity=\"0\" stroke=\"rgb(" + rgb[0] + ", " + rgb[1] + ", " + rgb[2] + ")\"\nd=\""
             + cont + "\"\n/>\n";
     };
     if (dots.size() > 2) {
